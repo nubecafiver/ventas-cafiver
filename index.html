@@ -652,9 +652,9 @@ function applyFilters(){
     var el=$(id); el.value?el.classList.add('filter-active'):el.classList.remove('filter-active');
   });
 
-  var hasFilter = ch||mon;
-  $('period-section').style.display = hasFilter?'block':'none';
-  if(hasFilter) renderPeriod(ch, mon);
+  // Siempre mostrar la sección de período
+  $('period-section').style.display = 'block';
+  renderPeriod(ch, mon);
 
   renderDay();
 }
