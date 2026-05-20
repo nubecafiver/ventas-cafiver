@@ -145,10 +145,10 @@ tfoot tr:last-child:hover td{background:#e8f5e0!important}
 
 /* ── MÓVIL MEJORADO ── */
 @media(max-width:640px){
-  /* Header compacto */
-  header{padding:8px 12px;min-height:52px;gap:6px}
+  /* Header */
+  header{padding:8px 12px;min-height:52px;gap:6px;flex-wrap:wrap}
   .h-logo{width:36px;height:36px}
-  .h-title{font-size:12px;letter-spacing:1px}
+  .h-title{font-size:11px;letter-spacing:1px}
   .h-badge{font-size:9px;padding:1px 8px}
   .h-update{display:none}
   .h-right{display:none;flex-direction:column;width:100%;padding:8px 0 4px;border-top:1px solid var(--border);gap:6px}
@@ -158,50 +158,72 @@ tfoot tr:last-child:hover td{background:#e8f5e0!important}
   /* Main */
   main{padding:10px 8px;gap:10px}
 
-  /* Sección día */
-  .sec-header{flex-wrap:wrap;gap:6px}
-  .sec-title{font-size:11px;padding:4px 10px}
-  .day-nav{margin-left:0;width:100%;justify-content:space-between;margin-top:4px}
-  .day-btn{font-size:12px;padding:6px 14px;border-radius:8px}
-  #day-label{font-size:12px;padding:6px 14px}
-
-  /* KPIs 2 columnas */
+  /* KPIs — 2 columnas, Kilos ocupa las 2 */
   .kpi-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .kpi-grid .kpi:last-child{grid-column:1/-1}
   .kpi{padding:12px 10px 10px}
   .kpi-label{font-size:8px;letter-spacing:2px}
-  .kpi-value{font-size:16px!important;margin-top:4px}
+  .kpi-value{font-size:18px!important;margin-top:4px}
   .kpi-sub{font-size:10px}
 
   /* Cards */
   .card{padding:12px 10px}
   .card-title{font-size:9px;margin-bottom:10px}
 
-  /* Grids — apila todo */
+  /* Grids — todo en columna */
   .g2,.g3{grid-template-columns:1fr!important;gap:10px}
 
-  /* Tablas org — solo canal y valor */
-  table{font-size:11px}
-  th,td{padding:6px 7px}
-  .org-bar{display:none}
-  /* Ocultar kilos y facts en tablas org en móvil */
-  #org-mxn-body td:nth-child(2),#org-mxn-body td:nth-child(4),
-  #org-usd-body td:nth-child(2),#org-usd-body td:nth-child(4),
-  #org-mxn-foot td:nth-child(2),#org-mxn-foot td:nth-child(4),
-  #org-usd-foot td:nth-child(2),#org-usd-foot td:nth-child(4),
-  table thead th:nth-child(2),table thead th:nth-child(4){display:none}
+  /* Tabla org — scroll horizontal con columnas fijas */
+  .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{font-size:11px;min-width:400px}
+  th,td{padding:6px 8px;white-space:nowrap}
 
-  /* Gráfica más compacta */
-  .cbox{height:180px}.cbox canvas{max-height:180px}
-  .cbox-sm{height:150px}.cbox-sm canvas{max-height:150px}
-
-  /* Tabla líneas — columnas esenciales */
+  /* Ocultar columnas menos importantes en móvil */
   .hide-m{display:none!important}
 
-  /* KPI mini dentro de la gráfica */
-  #chart-mxn-total,#chart-usd-total{font-size:14px!important}
+  /* Org table — ocultar kilos y facts, mostrar canal+valor+% */
+  #org-mxn-body td:nth-child(2),
+  #org-mxn-body td:nth-child(4),
+  #org-usd-body td:nth-child(2),
+  #org-usd-body td:nth-child(4),
+  #org-mxn-foot td:nth-child(2),
+  #org-mxn-foot td:nth-child(4),
+  #org-usd-foot td:nth-child(2),
+  #org-usd-foot td:nth-child(4),
+  #org-mxn-body th:nth-child(2),
+  #org-mxn-body th:nth-child(4){display:none}
+  
+  /* Cabeceras org ocultas en móvil */
+  table thead th:nth-child(2),
+  table thead th:nth-child(4){display:none}
 
-  /* Período */
+  /* VS PRESUPUESTO — scroll horizontal */
+  #presup-mes-table{min-width:600px}
+
+  /* Sección día nav */
+  .sec-header{flex-wrap:wrap;gap:6px}
+  .sec-title{font-size:11px;padding:4px 10px}
+  .day-nav{margin-left:0;width:100%;justify-content:space-between;margin-top:4px}
+  .day-btn{font-size:12px;padding:6px 14px;border-radius:8px}
+  #day-label{font-size:12px;padding:6px 14px}
+
+  /* Gráfica canal */
+  .cbox{height:220px}
+  .cbox-sm{height:160px}
+
+  /* KPI mini gráfica */
+  #chart-mxn-total,#chart-usd-total{font-size:15px!important}
+
+  /* Botones mes presupuesto */
+  #presup-mes-btns{gap:5px}
+  #presup-mes-btns button{font-size:11px;padding:4px 10px}
+
+  /* Divider */
   .sec-divider::after{font-size:8px;letter-spacing:1px}
+
+  /* Top clientes tabla móvil */
+  #tbl-cli td:nth-child(3){display:none}
+  #tbl-cli th:nth-child(3){display:none}
 }
 </style>
 </head>
