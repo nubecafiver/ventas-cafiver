@@ -910,11 +910,23 @@ function renderPeriod(ch, mon){
   var dates  = filteredDates;
   var totalP=0, diasP=0;
 
-  // Reconstruir top clientes/productos filtrados por canal si hay filtro
-  var topCli  = D.topClientes  || [];
-  var topProd = D.topProductos || [];
-  var porOfic = D.porOficina   || [];
-  var kpisP   = calcKPIsPeriodo(ch, mon);
+  var kpisP = calcKPIsPeriodo(ch, mon);
+
+  // Si hay canal seleccionado, usar topPorCanal; si no, usar datos globales
+  var topCli, topProd, porOfic, orgAll;
+  if(ch && D.topPorCanal && D.topPorCanal[ch]){
+    var datos = D.topPorCanal[ch];
+    topCli  = datos.topClientes  || [];
+    topProd = datos.topProductos || [];
+    porOfic = datos.porOficina   || [];
+    // Dona: solo ese canal
+    orgAll  = ((D.orgMXN&&D.orgMXN.rows)||[]).filter(function(r){ return r.org===ch; });
+  } else {
+    topCli  = D.topClientes  || [];
+    topProd = D.topProductos || [];
+    porOfic = D.porOficina   || [];
+    orgAll  = (D.orgMXN&&D.orgMXN.rows)||[];
+  }
 
   if(ch){
     $('period-sub').textContent = ch + (mon?' · '+MONTHS[+mon.split('-')[1]-1]+' '+mon.split('-')[0]:'');
@@ -960,8 +972,7 @@ function renderPeriod(ch, mon){
       '<td class="num"><div class="bi"><div class="bb"><div class="bf" style="width:'+(e.netwr/maxProd*100).toFixed(0)+'%;background:#8c6b2d"></div></div>'+fmt(e.netwr)+'</div></td></tr>';
   }).join('');
 
-  // Dona canal
-  var orgAll = ((D.orgMXN&&D.orgMXN.rows)||[]);
+  // Dona canal (ya calculado arriba)
   mkChart('chart-canal',{type:'doughnut',data:{
     labels:orgAll.map(function(e){return e.org;}),
     datasets:[{data:orgAll.map(function(e){return e.netwr;}),backgroundColor:PALETTE,borderWidth:2,borderColor:'#fff',hoverOffset:10}]
