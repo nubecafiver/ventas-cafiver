@@ -1060,7 +1060,7 @@ function calcKPIsPeriodo(ch, mon){
 
 
   // ── PRESUPUESTO vs REAL ──────────────────────────────────────
-  var presupMesActivo = null;
+  var mesesSeleccionados = []; // multiselección
 
   function renderPresupuesto(){
     if(!D || !D.realPorMes) return;
@@ -1097,100 +1097,120 @@ function calcKPIsPeriodo(ch, mon){
       '</tr>'+
     '</thead>';
 
-    function buildRows(mesNom){
-      var real = D.realPorMes[mesNom] || {};
+    function acumularMeses(meses){
+      // Acumular reales 2026, proyectados, presupuesto y 2025 para lista de meses
+      var acum = {};
+      LINEAS.forEach(function(linea){
+        acum[linea] = {ventas:0, kg:0, proy:0, proyKG:0, presupV:0, presupKG:0, uai:0, v25:0, k25:0};
+      });
+      meses.forEach(function(mesNom){
+        var real = D.realPorMes[mesNom] || {};
+        var r25  = REAL2025[mesNom]     || {};
+        LINEAS.forEach(function(linea){
+          var pm = PRESUPUESTO[linea] && PRESUPUESTO[linea][mesNom];
+          if(!pm) return;
+          var rr = real[linea] || {ventas:0,kg:0,proyVentas:0,proyKG:0};
+          var r2 = r25[linea]  || {ventas:0,kg:0};
+          acum[linea].ventas   += rr.ventas    ||0;
+          acum[linea].kg       += rr.kg        ||0;
+          acum[linea].proy     += rr.proyVentas||0;
+          acum[linea].proyKG   += rr.proyKG    ||0;
+          acum[linea].presupV  += pm.ventas    ||0;
+          acum[linea].presupKG += pm.kg        ||0;
+          acum[linea].uai      += pm.uai       ||0;
+          acum[linea].v25      += r2.ventas    ||0;
+          acum[linea].k25      += r2.kg        ||0;
+        });
+      });
+      return acum;
+    }
+
+    function buildRowsAcum(acum){
       var rows = '';
       LINEAS.forEach(function(linea){
-        var pm  = PRESUPUESTO[linea] && PRESUPUESTO[linea][mesNom];
-        if(!pm) return;
-        var rV  = real[linea] ? real[linea].ventas||0 : 0;
-        var rK  = real[linea] ? real[linea].kg||0     : 0;
+        var a   = acum[linea];
         var isT = linea==='Total';
         var bg  = isT ? 'background:var(--green)' : '';
         var tc  = isT ? '#fff' : 'var(--green)';
         var mc  = isT ? '#d0ecc8' : 'var(--muted)';
-        var pK  = real[linea] ? real[linea].proyKG||0     : 0;
-        var pV  = real[linea] ? real[linea].proyVentas||0 : 0;
-        var pcV = pm.ventas>0 ? pV/pm.ventas*100 : 0;
-        var pcK = pm.kg>0     ? pK/pm.kg*100     : 0;
-        var cpV = pcColor(pcV), cpK = pcColor(pcK);
-        // Datos 2025
-        var r25  = REAL2025[mesNom] && REAL2025[mesNom][linea] ? REAL2025[mesNom][linea] : null;
-        var rV25 = r25 ? r25.ventas||0 : 0;
-        var rK25 = r25 ? r25.kg||0     : 0;
-        // Variación vs año anterior
-        var dV   = rV25>0 ? ((rV-rV25)/rV25*100) : 0;
-        var dK   = rK25>0 ? ((rK-rK25)/rK25*100) : 0;
-        var cdV  = dV>=0?'#2d5a1b':'#c4364a';
-        var cdK  = dK>=0?'#2d5a1b':'#c4364a';
-        var arV  = dV>=0?'▲':'▼';
-        var arK  = dK>=0?'▲':'▼';
+        var dV  = a.v25>0 ? ((a.ventas-a.v25)/a.v25*100) : 0;
+        var dK  = a.k25>0 ? ((a.kg-a.k25)/a.k25*100)     : 0;
+        var cdV = dV>=0?'#2d5a1b':'#c4364a';
+        var cdK = dK>=0?'#2d5a1b':'#c4364a';
+        var arV = dV>=0?'▲':'▼';
+        var arK = dK>=0?'▲':'▼';
+        var cpV = a.presupV>0 ? a.proy/a.presupV*100 : 0;
+        var cpK = a.presupKG>0 ? a.proyKG/a.presupKG*100 : 0;
         rows += '<tr style="'+bg+(isT?'':';border-bottom:1px solid var(--bg2)')+'">'+
           '<td style="padding:7px 10px;font-weight:'+(isT?700:600)+';color:'+(isT?'#fff':'var(--text)')+'">'+linea+'</td>'+
-          // 2026
-          '<td class="num" style="background:'+(isT?'':'#f9fdf7')+';color:'+tc+';font-weight:'+(isT?700:500)+'">'+fmtN(rK)+'</td>'+
-          '<td class="num" style="background:'+(isT?'':'#f9fdf7')+';color:'+(isT?'#d0ecc8':cpK)+';font-style:italic">'+fmtN(pK)+'</td>'+
-          '<td class="num" style="background:'+(isT?'':'#f9fdf7')+';color:'+tc+';font-weight:'+(isT?700:600)+'">'+fmt(rV)+'</td>'+
-          '<td style="text-align:right;padding:7px 10px;background:'+(isT?'':'#f9fdf7')+'">'+pcBadge(rV,pm.ventas,isT)+'</td>'+
-          // 2025
-          '<td class="num" style="background:'+(isT?'':'#fffdf0')+';color:'+(isT?'#d0ecc8':'#8c6b2d')+'">'+fmtN(rK25)+'</td>'+
-          '<td class="num" style="background:'+(isT?'':'#fffdf0')+';color:'+(isT?'#d0ecc8':'#8c6b2d')+'">'+fmt(rV25)+'</td>'+
-          // Delta
+          '<td class="num" style="background:'+(isT?'':'#f9fdf7')+';color:'+tc+';font-weight:'+(isT?700:500)+'">'+fmtN(a.kg)+'</td>'+
+          '<td class="num" style="background:'+(isT?'':'#f9fdf7')+';color:'+(isT?'#d0ecc8':pcColor(cpK))+';font-style:italic">'+fmtN(a.proyKG)+'</td>'+
+          '<td class="num" style="background:'+(isT?'':'#f9fdf7')+';color:'+tc+';font-weight:'+(isT?700:600)+'">'+fmt(a.ventas)+'</td>'+
+          '<td style="text-align:right;padding:7px 10px;background:'+(isT?'':'#f9fdf7')+'">'+pcBadge(a.ventas,a.presupV,isT)+'</td>'+
+          '<td class="num" style="background:'+(isT?'':'#fffdf0')+';color:'+(isT?'#d0ecc8':'#8c6b2d')+'">'+fmtN(a.k25)+'</td>'+
+          '<td class="num" style="background:'+(isT?'':'#fffdf0')+';color:'+(isT?'#d0ecc8':'#8c6b2d')+'">'+fmt(a.v25)+'</td>'+
           '<td class="num" style="background:'+(isT?'':'#f0f4ff')+';color:'+(isT?'#d0ecc8':cdK)+';font-weight:700">'+
-            (rK25>0?arK+Math.abs(dK).toFixed(1)+'%':'—')+'</td>'+
+            (a.k25>0?arK+Math.abs(dK).toFixed(1)+'%':'—')+'</td>'+
           '<td class="num" style="background:'+(isT?'':'#f0f4ff')+';color:'+(isT?'#d0ecc8':cdV)+';font-weight:700">'+
-            (rV25>0?arV+Math.abs(dV).toFixed(1)+'%':'—')+'</td>'+
-          // UAI
-          '<td class="num" style="color:'+mc+'">'+fmt(pm.uai)+'</td>'+
+            (a.v25>0?arV+Math.abs(dV).toFixed(1)+'%':'—')+'</td>'+
+          '<td class="num" style="color:'+mc+'">'+fmt(a.uai)+'</td>'+
         '</tr>';
       });
       return rows;
     }
 
-    function showMes(mesNom){
-      presupMesActivo = mesNom;
-      var hoy = new Date();
-
-      // Actualizar botones
-      var btns = $('presup-mes-btns').querySelectorAll('button');
-      btns.forEach(function(b){
-        var isAct = b.dataset.mes === mesNom;
-        b.style.background    = isAct ? 'var(--green)' : 'var(--surf2)';
-        b.style.color         = isAct ? '#fff' : 'var(--text2)';
-        b.style.borderColor   = isAct ? 'var(--green)' : 'var(--border)';
-        b.style.fontWeight    = isAct ? '700' : '400';
-      });
-
-      // Título
-      var isCurrent = MESES_NOM[hoy.getMonth()] === mesNom;
-      $('presup-mes-title').textContent = mesNom + ' ' + hoy.getFullYear() +
-        (isCurrent ? '  —  Mes en curso' : '  —  Mes cerrado');
-
-      // Tabla
-      $('presup-mes-table').innerHTML = THEAD + '<tbody>' + buildRows(mesNom) + '</tbody>';
+    function updateTable(){
+      var meses = mesesSeleccionados.length>0 ? mesesSeleccionados : [presupMesActivo];
+      var label = meses.length===1 ? meses[0] : meses[0]+' – '+meses[meses.length-1]+' (Acumulado)';
+      var hoy   = new Date();
+      var isCurrent = meses.indexOf(MESES_NOM[hoy.getMonth()]) >= 0;
+      $('presup-mes-title').textContent = label + ' 2026' + (isCurrent?' — Mes en curso':' — Acumulado');
+      var acum = acumularMeses(meses);
+      $('presup-mes-table').innerHTML = THEAD + '<tbody>' + buildRowsAcum(acum) + '</tbody>';
     }
 
-    // Construir botones de meses disponibles
+    // Construir botones multiselección
     var hoy       = new Date();
     var mesActIdx = hoy.getMonth();
     var btnsHtml  = '';
     for(var m=0; m<=mesActIdx; m++){
       var mn = MESES_NOM[m];
-      if(!D.realPorMes[mn] && m < mesActIdx) continue; // saltar meses sin datos excepto el actual
-      btnsHtml += '<button data-mes="'+mn+'" onclick="window.__showPresupMes(\''+mn+'\')" style="'+
+      btnsHtml += '<button data-mes="'+mn+'" onclick="window.__togglePresupMes(\''+mn+'\')" style="'+
         'background:var(--surf2);border:1px solid var(--border);color:var(--text2);'+
         'border-radius:20px;padding:5px 14px;font-size:12px;cursor:pointer;'+
-        'font-family:\'DM Sans\',sans-serif;transition:all .15s">'+mn+'</button>';
+        'font-family:\'DM Sans\',sans-serif;transition:all .15s;user-select:none">'+mn+'</button>';
     }
     $('presup-mes-btns').innerHTML = btnsHtml;
+    $('presup-sub').textContent = 'Haz clic en uno o varios meses para ver el acumulado';
 
-    // Función global para onclick
-    window.__showPresupMes = showMes;
+    window.__togglePresupMes = function(mesNom){
+      var idx = mesesSeleccionados.indexOf(mesNom);
+      if(idx >= 0){
+        mesesSeleccionados.splice(idx, 1);
+      } else {
+        mesesSeleccionados.push(mesNom);
+        // Ordenar por orden del año
+        mesesSeleccionados.sort(function(a,b){ return MESES_NOM.indexOf(a)-MESES_NOM.indexOf(b); });
+      }
+      // Si ninguno seleccionado, seleccionar el mes actual
+      if(mesesSeleccionados.length === 0) mesesSeleccionados = [MESES_NOM[mesActIdx]];
 
-    // Mostrar mes actual por defecto
-    showMes(MESES_NOM[mesActIdx]);
+      // Actualizar estilos botones
+      var btns = $('presup-mes-btns').querySelectorAll('button');
+      btns.forEach(function(b){
+        var sel = mesesSeleccionados.indexOf(b.dataset.mes) >= 0;
+        b.style.background  = sel ? 'var(--green)' : 'var(--surf2)';
+        b.style.color       = sel ? '#fff'          : 'var(--text2)';
+        b.style.borderColor = sel ? 'var(--green)'  : 'var(--border)';
+        b.style.fontWeight  = sel ? '700'           : '400';
+      });
+      updateTable();
+    };
+
+    // Seleccionar mes actual por defecto
+    mesesSeleccionados = [MESES_NOM[mesActIdx]];
+    window.__togglePresupMes(MESES_NOM[mesActIdx]); // activa el botón
   }
-
 
 
 function mkChart(id,cfg){if(charts[id]){charts[id].destroy();delete charts[id];}charts[id]=new Chart(document.getElementById(id).getContext('2d'),cfg);}
