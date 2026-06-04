@@ -531,7 +531,7 @@ function cargarDatos() {
     delete window[callbackName];
     // Intento 2: iframe + postMessage
     cargarConIframe();
-  }, 10000);
+  }, 45000); // 45 segundos para dar tiempo al Apps Script
 
   window[callbackName] = function(json){
     if(done) return;
@@ -567,7 +567,7 @@ function cargarConIframe() {
     document.body.removeChild(iframe);
     $('ld-error').innerHTML = 'No se pudo conectar automáticamente.<br>Por favor recarga la página o contacta soporte.';
     setBar(0,'');
-  }, 20000);
+  }, 60000);
 
   window.addEventListener('message', function handler(e){
     if(done) return;
