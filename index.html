@@ -398,7 +398,7 @@ tfoot tr:last-child:hover td{background:#e8f5e0!important}
 
 <script>
 (function(){
-var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxJyGF9JaOWxe-52sV15igHX-i2o7pW7x6AwpFmarukT9ESFJ-qotSYRMM-OobyrPiT/exec';
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxdR5CHfrzVsQ1jK9E84jMvAANTO36iIFd9SGenR3x4Co8FvFd1E9Iimlb9L7iLVGKE/exec';
 var MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 var PALETTE = ['#2d5a1b','#5a8c2d','#8c6b2d','#c4714a','#4a7c8c','#7a3fa0','#c4a020','#3b5bdb','#c4364a','#20a090'];
 
@@ -518,46 +518,17 @@ var filteredDates = [];
 // ── CARGA ──
 setBar(10,'Conectando con servidor...');
 
+// ID del JSON pre-calculado en Google Drive
+var GDRIVE_JSON_ID = '1ugdoZL_KKtc2z-CQiG-Pt-ULRRsxdfK4PlADBJ2tLXg';
+
 function cargarDatos() {
-  // Paso 1: obtener el fileId del JSON en Drive
-  setBar(15, 'Conectando...');
-  var cbFileId = 'cafiver_fid_' + Date.now();
-  var scFid = document.createElement('script');
-  var fidDone = false;
-
-  var fidTimeout = setTimeout(function(){
-    if(fidDone) return; fidDone = true;
-    if(scFid.parentNode) scFid.parentNode.removeChild(scFid);
-    delete window[cbFileId];
-    // Fallback: cargar directo por JSONP
-    cargarPorJSONP();
-  }, 8000);
-
-  window[cbFileId] = function(resp){
-    if(fidDone) return; fidDone = true;
-    clearTimeout(fidTimeout);
-    if(scFid.parentNode) scFid.parentNode.removeChild(scFid);
-    delete window[cbFileId];
-    if(resp && resp.fileId){
-      cargarDesdeGDrive(resp.fileId);
-    } else {
-      cargarPorJSONP();
-    }
-  };
-
-  scFid.src = APPS_SCRIPT_URL + '?action=fileid&callback=' + cbFileId;
-  scFid.onerror = function(){ if(!fidDone){ fidDone=true; cargarPorJSONP(); } };
-  document.head.appendChild(scFid);
-}
-
-function cargarDesdeGDrive(fileId){
-  // Descarga directa del JSON desde Google Drive — mucho más rápido
-  setBar(30, 'Descargando datos...');
-  var url = 'https://drive.google.com/uc?export=download&id=' + fileId;
+  // Descargar JSON directo de Google Drive — rápido
+  setBar(20, 'Descargando datos...');
+  var url = 'https://drive.google.com/uc?export=download&id=' + GDRIVE_JSON_ID;
   fetch(url)
     .then(function(r){
       if(!r.ok) throw new Error('HTTP '+r.status);
-      setBar(65, 'Leyendo datos...');
+      setBar(60, 'Leyendo datos...');
       return r.text();
     })
     .then(function(txt){
@@ -566,7 +537,8 @@ function cargarDesdeGDrive(fileId){
       setTimeout(initDashboard, 80);
     })
     .catch(function(){
-      // Si falla Drive, intentar JSONP
+      // Fallback: JSONP via Apps Script
+      setBar(15, 'Intentando conexión alternativa...');
       cargarPorJSONP();
     });
 }
