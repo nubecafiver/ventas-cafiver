@@ -398,7 +398,7 @@ tfoot tr:last-child:hover td{background:#e8f5e0!important}
 
 <script>
 (function(){
-var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxlHTSwPKbfH17jINxvtzG5aAa-3JbwGatSX8iQYlvAD-Tli0SfyMCsYFr2yuItjjFm/exec';
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxJyGF9JaOWxe-52sV15igHX-i2o7pW7x6AwpFmarukT9ESFJ-qotSYRMM-OobyrPiT/exec';
 var MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 var PALETTE = ['#2d5a1b','#5a8c2d','#8c6b2d','#c4714a','#4a7c8c','#7a3fa0','#c4a020','#3b5bdb','#c4364a','#20a090'];
 
@@ -519,23 +519,74 @@ var filteredDates = [];
 setBar(10,'Conectando con servidor...');
 
 function cargarDatos() {
-  // Intento 1: JSONP con script tag (evita CORS)
+  // Paso 1: obtener el fileId del JSON en Drive
+  setBar(15, 'Conectando...');
+  var cbFileId = 'cafiver_fid_' + Date.now();
+  var scFid = document.createElement('script');
+  var fidDone = false;
+
+  var fidTimeout = setTimeout(function(){
+    if(fidDone) return; fidDone = true;
+    if(scFid.parentNode) scFid.parentNode.removeChild(scFid);
+    delete window[cbFileId];
+    // Fallback: cargar directo por JSONP
+    cargarPorJSONP();
+  }, 8000);
+
+  window[cbFileId] = function(resp){
+    if(fidDone) return; fidDone = true;
+    clearTimeout(fidTimeout);
+    if(scFid.parentNode) scFid.parentNode.removeChild(scFid);
+    delete window[cbFileId];
+    if(resp && resp.fileId){
+      cargarDesdeGDrive(resp.fileId);
+    } else {
+      cargarPorJSONP();
+    }
+  };
+
+  scFid.src = APPS_SCRIPT_URL + '?action=fileid&callback=' + cbFileId;
+  scFid.onerror = function(){ if(!fidDone){ fidDone=true; cargarPorJSONP(); } };
+  document.head.appendChild(scFid);
+}
+
+function cargarDesdeGDrive(fileId){
+  // Descarga directa del JSON desde Google Drive — mucho más rápido
+  setBar(30, 'Descargando datos...');
+  var url = 'https://drive.google.com/uc?export=download&id=' + fileId;
+  fetch(url)
+    .then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      setBar(65, 'Leyendo datos...');
+      return r.text();
+    })
+    .then(function(txt){
+      setBar(85, 'Preparando dashboard...');
+      D = JSON.parse(txt);
+      setTimeout(initDashboard, 80);
+    })
+    .catch(function(){
+      // Si falla Drive, intentar JSONP
+      cargarPorJSONP();
+    });
+}
+
+function cargarPorJSONP(){
+  // JSONP directo al Apps Script
+  setBar(20, 'Cargando desde servidor...');
   var callbackName = 'cafiver_cb_' + Date.now();
   var script = document.createElement('script');
   var done = false;
 
   var timeout = setTimeout(function(){
-    if(done) return;
-    done = true;
+    if(done) return; done = true;
     if(script.parentNode) script.parentNode.removeChild(script);
     delete window[callbackName];
-    // Intento 2: iframe + postMessage
     cargarConIframe();
-  }, 45000); // 45 segundos para dar tiempo al Apps Script
+  }, 45000);
 
   window[callbackName] = function(json){
-    if(done) return;
-    done = true;
+    if(done) return; done = true;
     clearTimeout(timeout);
     if(script.parentNode) script.parentNode.removeChild(script);
     delete window[callbackName];
@@ -544,11 +595,9 @@ function cargarDatos() {
     setTimeout(initDashboard, 80);
   };
 
-  setBar(25,'Descargando datos...');
   script.src = APPS_SCRIPT_URL + '?callback=' + callbackName;
   script.onerror = function(){
-    if(done) return;
-    done = true;
+    if(done) return; done=true;
     clearTimeout(timeout);
     delete window[callbackName];
     cargarConIframe();
