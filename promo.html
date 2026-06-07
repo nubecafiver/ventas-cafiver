@@ -229,7 +229,9 @@ tr:hover td{background:var(--surf2)}
 
   function procesarDatos(rows){
     // rows ya vienen desglosadas por lote desde el Apps Script
-    allRows = (rows||[]).map(function(r,i){return Object.assign({idx:i+1},r);});
+    // Excluir registros sin lote — no participan en la promo
+    allRows = (rows||[]).filter(function(r){ return r.lote && r.lote.trim() !== ''; })
+              .map(function(r,i){return Object.assign({idx:i+1},r);});
 
     $('loading').style.display='none';
     $('app').style.display='block';
