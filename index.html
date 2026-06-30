@@ -958,14 +958,24 @@ function renderPeriod(ch, mon){
 
   var kpisP = calcKPIsPeriodo(ch, mon);
 
-  // Si hay canal seleccionado, usar topPorCanal; si no, usar datos globales
+  // Fuente de los 4 paneles del período.
+  // Usa "paneles" (por mes y por canal+mes) cuando el JSON ya lo trae;
+  // si no, cae al comportamiento anterior (período completo).
   var topCli, topProd, porOfic, orgAll;
-  if(ch && D.topPorCanal && D.topPorCanal[ch]){
+  var mesKey = mon || 'ALL';
+  if(D.paneles && D.paneles.mes){
+    var bucket = (ch && D.paneles.canalMes && D.paneles.canalMes[ch])
+                 ? D.paneles.canalMes[ch] : D.paneles.mes;
+    var pdata  = bucket[mesKey] || bucket['ALL'] || {};
+    topCli  = pdata.topClientes  || [];
+    topProd = pdata.topProductos || [];
+    porOfic = pdata.porOficina   || [];
+    orgAll  = (pdata.org && pdata.org.rows) || [];
+  } else if(ch && D.topPorCanal && D.topPorCanal[ch]){
     var datos = D.topPorCanal[ch];
     topCli  = datos.topClientes  || [];
     topProd = datos.topProductos || [];
     porOfic = datos.porOficina   || [];
-    // Dona: solo ese canal
     orgAll  = ((D.orgMXN&&D.orgMXN.rows)||[]).filter(function(r){ return r.org===ch; });
   } else {
     topCli  = D.topClientes  || [];
