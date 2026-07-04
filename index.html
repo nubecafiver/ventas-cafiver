@@ -167,7 +167,7 @@ tr:hover td{background:#f7f9ff}
 .db-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;padding:22px 26px;background:linear-gradient(135deg,#0f172a,#1e3a5f);border-radius:16px;border:1px solid rgba(255,255,255,.08)}
 .db-title{font-size:22px;font-weight:700;color:#fff;letter-spacing:-.02em;margin-bottom:4px}
 .db-fecha{font-size:12px;color:rgba(255,255,255,.4)}
-.db-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.db-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
 .db-kpi{background:linear-gradient(135deg,#0f172a,#1a2744);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px;transition:transform .15s,border-color .15s;position:relative;overflow:hidden}
 .db-kpi:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.15)}
 .db-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent)}
@@ -340,7 +340,7 @@ tbody tr:hover{background:rgba(42,74,30,.04)!important}
 .db-header{background:linear-gradient(135deg,var(--cf-green),var(--cf-green2))!important;border:none!important}
 .db-title{font-family:'Playfair Display',serif!important;font-weight:700!important;color:#fff!important}
 .db-fecha{color:rgba(255,255,255,.6)!important}
-.db-kpi{background:var(--cf-white)!important;border:1px solid var(--cf-border)!important;box-shadow:var(--cf-shadow)!important}
+.db-kpi{background:var(--cf-white)!important;border:1px solid var(--cf-border)!important;box-shadow:var(--cf-shadow)!important;padding:14px!important}
 .db-kpi:hover{border-color:var(--cf-green3)!important;transform:translateY(-2px)}
 .db-kpi::before{background:linear-gradient(90deg,transparent,rgba(42,74,30,.06),transparent)!important}
 .db-card{background:var(--cf-white)!important;border:1px solid var(--cf-border)!important;box-shadow:var(--cf-shadow)!important}
@@ -852,15 +852,22 @@ function fichaRow(k,v){return'<div class="ficha-row"><div class="ficha-k">'+k+'<
 
 // ══ LOGIN ══
 document.addEventListener('DOMContentLoaded', function(){
-  // Splash — 2.5s con logo pulsante y barra de carga
+  // Splash — 2.5s, luego muestra login (o app si ya hay sesión)
+  window._splashDone=false;
   setTimeout(function(){
     var splash=document.getElementById('splash-screen');
     if(splash){
       splash.classList.add('fade-out');
       setTimeout(function(){
         splash.style.display='none';
-        var ls=document.getElementById('login-screen');
-        if(ls)ls.classList.remove('hidden');
+        window._splashDone=true;
+        // Si ya autenticó durante el splash, ya entró al app
+        // Si no, mostrar login
+        var app=document.getElementById('app');
+        if(!app||app.classList.contains('hidden')){
+          var ls=document.getElementById('login-screen');
+          if(ls)ls.classList.remove('hidden');
+        }
       },500);
     }
   },2500);
@@ -908,6 +915,9 @@ function doLogout(){auth.signOut().then(function(){curUser=null;document.getElem
 function enterApp(){
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
+  // Asegurar que el splash esté oculto
+  var sp=document.getElementById('splash-screen');
+  if(sp)sp.style.display='none';
   document.body.classList.add('app-mode');
   var av=document.getElementById('cur-av');
   av.textContent=ini(curUser.name);
@@ -1045,14 +1055,12 @@ async function cargarStatsDashboard(){
 
     // KPI FILA 1 — SOLO TOTAL
     +'<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px">Parque de equipos</div>'
-    +'<div class="db-kpi-grid" style="grid-template-columns:1fr">'
-    +dbKpi('Total universo',totalEq.toLocaleString(),'equipos registrados en SAP','#2a4a1e','☕','')
-    +'</div>'
-
-    // KPI FILA 2 — CLASIFICACIÓN
-    +'<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.12em;margin:4px 0 8px">Clasificación del parque</div>'
     +'<div class="db-kpi-grid">'
-    +dbKpi('Equipo nuevo',(porClase.CSNUEVO||0).toLocaleString(),'CSNUEVO','#8b6914','✨','claseActivo:CSNUEVO')
+    +dbKpi('Total universo',totalEq.toLocaleString(),'equipos en SAP','#2a4a1e','☕','')
+    +dbKpi('Ordenes abiertas',ordAbiertas,'pendientes','#8b6914','📋','')
+    +dbKpi('Ingresos mes',fmt$(ingresosMes),'facturacion del mes','#2a4a1e','💰','')
+    +dbKpi('Total historico',fmt$(ingresosTotal),'acumulado','#5a3e8b','📈','')
+    +'</div>'
     +dbKpi('Equipo usado',(porClase.CSUSADO||0).toLocaleString(),'CSUSADO','#2a4a1e','♻️','claseActivo:CSUSADO')
     +dbKpi('Cafetera',(porClase.CAFETERA||0).toLocaleString(),'CAFETERA','#3d6b2c','☕','claseActivo:CAFETERA')
     +dbKpi('Hotelera',(porClase.HOTELERA||0).toLocaleString(),'HOTELERA','#8b4513','🏨','claseActivo:HOTELERA')
@@ -1145,7 +1153,7 @@ async function cargarStatsDashboard(){
 
 function dbKpi(label,val,sub,color,icon,filtro){
   var onclick=filtro?'onclick="dbKpiClick(this)" data-filtro="'+filtro+'" style="cursor:pointer"':'';
-  return'<div class="db-kpi" '+onclick+'>'
+  return'<div class="db-kpi" style="padding:14px" '+onclick+'>'
     +'<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">'
     +'<div style="font-size:10px;font-weight:700;color:#4a5e42;text-transform:uppercase;letter-spacing:.08em">'+label+'</div>'
     +'<div style="font-size:18px;opacity:.7">'+icon+'</div>'
