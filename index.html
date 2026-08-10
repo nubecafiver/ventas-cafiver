@@ -1226,12 +1226,26 @@ function calcKPIsPeriodo(ch, mon){
       var realOf = (D.realPorOficina && canalCod && D.realPorOficina[canalCod]) ? D.realPorOficina[canalCod] : {};
       function codOf(pl){ var m=pl.match(/\(([^)]+)\)/); return m?m[1]:pl; }
 
+      // Factor de proyección: si entre los meses elegidos está el mes en curso,
+      // el presupuesto de ESE mes se prorratea por los días transcurridos.
+      // Los meses ya cerrados cuentan al 100%.
+      var hoyD = new Date();
+      var mesActualNom = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][hoyD.getMonth()];
+      var diaHoy = hoyD.getDate();
+      var diasMesActual = new Date(hoyD.getFullYear(), hoyD.getMonth()+1, 0).getDate();
+      var fraccionMesActual = diaHoy / diasMesActual;  // ej. día 10 de 31 = 0.32
+      function factorMes(mn){ return (mn===mesActualNom) ? fraccionMesActual : 1; }
+
       var mapa = {};
       Object.keys(plazas).forEach(function(pl){
         var cod = codOf(pl);
-        var pk=0, pv=0;
-        meses.forEach(function(mn){ var pm=plazas[pl][mn]; if(pm){ pk+=pm.kg||0; pv+=pm.ventas||0; } });
-        mapa[cod] = {nombre:pl, presKg:pk, presV:pv, realKg:0, realV:0};
+        var pk=0, pv=0, pkProy=0, pvProy=0;
+        meses.forEach(function(mn){ var pm=plazas[pl][mn]; if(pm){
+          pk+=pm.kg||0; pv+=pm.ventas||0;
+          var f=factorMes(mn);
+          pkProy+=(pm.kg||0)*f; pvProy+=(pm.ventas||0)*f;
+        } });
+        mapa[cod] = {nombre:pl, presKg:pk, presV:pv, presKgProy:pkProy, presVProy:pvProy, realKg:0, realV:0};
       });
 
       var MESNUM = {'Enero':'01','Febrero':'02','Marzo':'03','Abril':'04','Mayo':'05','Junio':'06',
@@ -1244,7 +1258,7 @@ function calcKPIsPeriodo(ch, mon){
           var mm = o.meses && o.meses[mk];
           if(mm){ rk+=mm.kg||0; rv+=mm.ventas||0; }
         });
-        if(!mapa[cod]) mapa[cod] = {nombre:(o.nombre||cod)+' ('+cod+')', presKg:0, presV:0, realKg:0, realV:0};
+        if(!mapa[cod]) mapa[cod] = {nombre:(o.nombre||cod)+' ('+cod+')', presKg:0, presV:0, presKgProy:0, presVProy:0, realKg:0, realV:0};
         mapa[cod].realKg = rk; mapa[cod].realV = rv;
       });
 
@@ -1252,8 +1266,8 @@ function calcKPIsPeriodo(ch, mon){
         .filter(function(m){ return m.presV>0 || m.realV>0; })
         .sort(function(a,b){ return b.presV-a.presV; });
 
-      var totPK=0,totPV=0,totRK=0,totRV=0;
-      filas.forEach(function(f){ totPK+=f.presKg; totPV+=f.presV; totRK+=f.realKg; totRV+=f.realV; });
+      var totPK=0,totPV=0,totRK=0,totRV=0,totPVProy=0,totPKProy=0;
+      filas.forEach(function(f){ totPK+=f.presKg; totPV+=f.presV; totRK+=f.realKg; totRV+=f.realV; totPVProy+=f.presVProy||0; totPKProy+=f.presKgProy||0; });
 
       function pcColor(v){ return v>=100?'#2d5a1b':v>=80?'#c4714a':'#c4364a'; }
       function pcCell(real,pres){
@@ -1275,6 +1289,7 @@ function calcKPIsPeriodo(ch, mon){
             '<th style="text-align:right;padding:8px 12px;background:#f9fdf7;color:var(--muted);font-weight:600">Ventas Real</th>'+
             '<th style="text-align:right;padding:8px 12px;background:#f0f8ec;color:var(--muted);font-weight:600">KG Presup.</th>'+
             '<th style="text-align:right;padding:8px 12px;background:#f0f8ec;color:var(--muted);font-weight:600">Ventas Presup.</th>'+
+            '<th style="text-align:right;padding:8px 12px;background:#fff8e6;color:var(--muted);font-weight:600">Presup. al día</th>'+
             '<th style="text-align:right;padding:8px 12px;background:#edf5ff;color:var(--muted);font-weight:600">% Cumpl.</th>'+
           '</tr></thead><tbody>'+
           filas.map(function(f){
@@ -1284,7 +1299,8 @@ function calcKPIsPeriodo(ch, mon){
               '<td class="num" style="padding:7px 12px;background:#f9fdf7;color:var(--green);font-weight:600">'+fmt(f.realV)+'</td>'+
               '<td class="num" style="padding:7px 12px;color:var(--text2)">'+fmtN(f.presKg)+'</td>'+
               '<td class="num" style="padding:7px 12px;color:var(--muted)">'+fmt(f.presV)+'</td>'+
-              '<td class="num" style="padding:7px 12px;background:#f6faff;text-align:right">'+pcCell(f.realV,f.presV)+'</td>'+
+              '<td class="num" style="padding:7px 12px;background:#fffdf3;color:#8c6b2d">'+fmt(f.presVProy)+'</td>'+
+              '<td class="num" style="padding:7px 12px;background:#f6faff;text-align:right">'+pcCell(f.realV,f.presVProy)+'</td>'+
             '</tr>';
           }).join('')+
           '</tbody><tfoot><tr style="background:var(--green);color:#fff;font-weight:700">'+
@@ -1293,7 +1309,8 @@ function calcKPIsPeriodo(ch, mon){
             '<td class="num" style="padding:8px 12px">'+fmt(totRV)+'</td>'+
             '<td class="num" style="padding:8px 12px">'+fmtN(totPK)+'</td>'+
             '<td class="num" style="padding:8px 12px">'+fmt(totPV)+'</td>'+
-            '<td class="num" style="padding:8px 12px">'+(totPV>0?(totRV/totPV*100).toFixed(1)+'%':'—')+'</td>'+
+            '<td class="num" style="padding:8px 12px">'+fmt(totPVProy)+'</td>'+
+            '<td class="num" style="padding:8px 12px">'+(totPVProy>0?(totRV/totPVProy*100).toFixed(1)+'%':'—')+'</td>'+
           '</tr></tfoot></table></div></div>';
       cont.innerHTML = html;
       cont.style.display = 'block';
