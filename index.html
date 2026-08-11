@@ -1262,8 +1262,11 @@ function calcKPIsPeriodo(ch, mon){
 
       var MESNUM = {'Enero':'01','Febrero':'02','Marzo':'03','Abril':'04','Mayo':'05','Junio':'06',
                     'Julio':'07','Agosto':'08','Septiembre':'09','Octubre':'10','Noviembre':'11','Diciembre':'12'};
+      // Reasignar oficinas sin plaza propia a la plaza que les corresponde (solo Coffee Service)
+      var REASIGNA = (linea==='Coffee Service') ? {'PUEB':'ORIZ','VERA':'ORIZ','GUER':'DIFE'} : {};
       Object.keys(realOf).forEach(function(cod){
         if(cod==='CAFE') return;   // CAFE no es plaza de Coffee Service, es de Cafeterías
+        var destino = REASIGNA[cod] || cod;   // si es huérfana, va a su plaza destino
         var o = realOf[cod];
         var rk=0, rv=0;
         meses.forEach(function(mn){
@@ -1271,8 +1274,9 @@ function calcKPIsPeriodo(ch, mon){
           var mm = o.meses && o.meses[mk];
           if(mm){ rk+=mm.kg||0; rv+=mm.ventas||0; }
         });
-        if(!mapa[cod]) mapa[cod] = {nombre:(o.nombre||cod)+' ('+cod+')', presKg:0, presV:0, presKgProy:0, presVProy:0, realKg:0, realV:0};
-        mapa[cod].realKg = rk; mapa[cod].realV = rv;
+        if(!mapa[destino]) mapa[destino] = {nombre:(o.nombre||destino)+' ('+destino+')', presKg:0, presV:0, presKgProy:0, presVProy:0, realKg:0, realV:0};
+        mapa[destino].realKg += rk;   // SUMAR (no asignar), para acumular las reasignadas
+        mapa[destino].realV  += rv;
       });
 
       var filas = Object.keys(mapa).map(function(c){ var m=mapa[c]; m.cod=c; return m; })
