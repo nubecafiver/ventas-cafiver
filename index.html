@@ -1113,25 +1113,27 @@ function calcKPIsPeriodo(ch, mon){
       return '<span style="font-family:\'JetBrains Mono\',monospace;font-size:'+(big?'13':'11')+'px;font-weight:700;color:'+c+'">'+v.toFixed(1)+'%</span>';
     }
 
+    var SEP='border-left:2px solid #d4d2c8';
     var THEAD = '<thead>'+
       '<tr>'+
-        '<th rowspan="2" style="min-width:140px;vertical-align:bottom">Línea</th>'+
-        '<th colspan="6" style="text-align:center;background:#f0f8ec;border-bottom:1px solid #c8e0bc">2026 Real</th>'+
-        '<th colspan="2" style="text-align:center;background:#fff8e6;border-bottom:1px solid #e8d090">2025 Real</th>'+
-        '<th colspan="2" style="text-align:center;background:#edf5ff;border-bottom:1px solid #c0d8f0">vs Año Ant.</th>'+
-        '<th rowspan="2" style="text-align:right;vertical-align:bottom">UAI Presup.</th>'+
+        '<th rowspan="2" style="min-width:150px;vertical-align:bottom;padding:8px 12px;text-align:left">Línea</th>'+
+        '<th colspan="3" style="text-align:center;background:#eaf3e2;border-bottom:2px solid #8fb573;'+SEP+';color:#2d5a1b;letter-spacing:.5px">REAL 2026</th>'+
+        '<th colspan="3" style="text-align:center;background:#eef6ff;border-bottom:2px solid #7ba9dd;'+SEP+';color:#185fa5;letter-spacing:.5px">PRESUPUESTO</th>'+
+        '<th colspan="2" style="text-align:center;background:#fdf3e0;border-bottom:2px solid #dbb262;'+SEP+';color:#8c6b2d;letter-spacing:.5px">2025</th>'+
+        '<th colspan="2" style="text-align:center;background:#f0f4ff;border-bottom:2px solid #a9c2ec;'+SEP+';color:#4a5ba0;letter-spacing:.5px">VS AÑO ANT.</th>'+
+        '<th rowspan="2" style="text-align:right;vertical-align:bottom;padding:8px 12px;'+SEP+'">UAI Presup.</th>'+
       '</tr>'+
       '<tr>'+
-        '<th style="text-align:right;background:#f0f8ec">KG 2026</th>'+
-        '<th style="text-align:right;background:#f0f8ec">Proyect.</th>'+
-        '<th style="text-align:right;background:#f0f8ec">Ventas 2026</th>'+
-        '<th style="text-align:right;background:#f0f8ec">% Presup.</th>'+
-        '<th style="text-align:right;background:#f0f8ec">KG Presup.</th>'+
-        '<th style="text-align:right;background:#f0f8ec">Ventas Presup.</th>'+
-        '<th style="text-align:right;background:#fff8e6">KG 2025</th>'+
-        '<th style="text-align:right;background:#fff8e6">Ventas 2025</th>'+
-        '<th style="text-align:right;background:#edf5ff">Δ KG</th>'+
-        '<th style="text-align:right;background:#edf5ff">Δ Ventas</th>'+
+        '<th style="text-align:right;background:#eaf3e2;'+SEP+'">KG</th>'+
+        '<th style="text-align:right;background:#eaf3e2">Proyección</th>'+
+        '<th style="text-align:right;background:#eaf3e2">Ventas</th>'+
+        '<th style="text-align:right;background:#eef6ff;font-weight:700;color:#185fa5;'+SEP+'">% Cumpl.</th>'+
+        '<th style="text-align:right;background:#eef6ff">KG</th>'+
+        '<th style="text-align:right;background:#eef6ff">Ventas</th>'+
+        '<th style="text-align:right;background:#fdf3e0;'+SEP+'">KG</th>'+
+        '<th style="text-align:right;background:#fdf3e0">Ventas</th>'+
+        '<th style="text-align:right;background:#f0f4ff;'+SEP+'">Δ KG</th>'+
+        '<th style="text-align:right;background:#f0f4ff">Δ Ventas</th>'+
       '</tr>'+
     '</thead>';
 
@@ -1183,21 +1185,31 @@ function calcKPIsPeriodo(ch, mon){
         var etiqueta = (linea==='Tienda Tradicional') ? 'rutas' : 'plazas';
         var clickAttr = tienePlaza ? ' onclick="window.__togglePlaza(\''+linea+'\')" style="cursor:pointer" title="Clic para ver desglose"' : '';
         var flecha = tienePlaza ? '<span style="color:var(--muted);font-size:10px;margin-left:5px">▸ '+etiqueta+'</span>' : '';
+        var S = isT ? 'border-left:2px solid rgba(255,255,255,.25)' : 'border-left:2px solid #d4d2c8';
+        var bgR = isT?'':'#f4f9ef';   // real 2026 (verde muy tenue)
+        var bgP = isT?'':'#f2f8ff';   // presupuesto (azul muy tenue)
+        var bgA = isT?'':'#fdf7ea';   // 2025 (ámbar muy tenue)
+        var bgD = isT?'':'#f2f5ff';   // delta (azul-gris tenue)
         rows += '<tr'+clickAttr+' style="'+bg+(isT?'':';border-bottom:1px solid var(--bg2)')+(tienePlaza?';cursor:pointer':'')+'">'+
-          '<td style="padding:7px 10px;font-weight:'+(isT?700:600)+';color:'+(isT?'#fff':'var(--text)')+'">'+linea+flecha+'</td>'+
-          '<td class="num" style="background:'+(isT?'':'#f9fdf7')+';color:'+tc+';font-weight:'+(isT?700:500)+'">'+fmtN(a.kg)+'</td>'+
-          '<td class="num" style="background:'+(isT?'':'#f9fdf7')+';color:'+(isT?'#d0ecc8':pcColor(cpK))+';font-style:italic">'+fmtN(a.proyKG)+'</td>'+
-          '<td class="num" style="background:'+(isT?'':'#f9fdf7')+';color:'+tc+';font-weight:'+(isT?700:600)+'">'+fmt(a.ventas)+'</td>'+
-          '<td style="text-align:right;padding:7px 10px;background:'+(isT?'':'#f9fdf7')+'">'+pcBadge(a.ventas,a.presupV,isT)+'</td>'+
-          '<td class="num" style="background:'+(isT?'':'#f9fdf7')+';color:'+mc+'">'+fmtN(a.presupKG)+'</td>'+
-          '<td class="num" style="background:'+(isT?'':'#f9fdf7')+';color:'+mc+'">'+fmt(a.presupV)+'</td>'+
-          '<td class="num" style="background:'+(isT?'':'#fffdf0')+';color:'+(isT?'#d0ecc8':'#8c6b2d')+'">'+fmtN(a.k25)+'</td>'+
-          '<td class="num" style="background:'+(isT?'':'#fffdf0')+';color:'+(isT?'#d0ecc8':'#8c6b2d')+'">'+fmt(a.v25)+'</td>'+
-          '<td class="num" style="background:'+(isT?'':'#f0f4ff')+';color:'+(isT?'#d0ecc8':cdK)+';font-weight:700">'+
+          '<td style="padding:8px 12px;font-weight:'+(isT?700:600)+';color:'+(isT?'#fff':'var(--text)')+';text-align:left">'+linea+flecha+'</td>'+
+          // ── REAL 2026: KG, Proyección, Ventas ──
+          '<td class="num" style="background:'+bgR+';color:'+tc+';font-weight:'+(isT?700:500)+';'+S+'">'+fmtN(a.kg)+'</td>'+
+          '<td class="num" style="background:'+bgR+';color:'+(isT?'#d0ecc8':'#8a8a80')+';font-style:italic">'+fmt(a.proy)+'</td>'+
+          '<td class="num" style="background:'+bgR+';color:'+tc+';font-weight:'+(isT?700:600)+'">'+fmt(a.ventas)+'</td>'+
+          // ── PRESUPUESTO: % Cumpl (destacado), KG, Ventas ──
+          '<td style="text-align:right;padding:8px 10px;background:'+bgP+';'+S+'">'+pcBadge(a.ventas,a.presupV,isT)+'</td>'+
+          '<td class="num" style="background:'+bgP+';color:'+mc+'">'+fmtN(a.presupKG)+'</td>'+
+          '<td class="num" style="background:'+bgP+';color:'+mc+'">'+fmt(a.presupV)+'</td>'+
+          // ── 2025: KG, Ventas ──
+          '<td class="num" style="background:'+bgA+';color:'+(isT?'#d0ecc8':'#8c6b2d')+';'+S+'">'+fmtN(a.k25)+'</td>'+
+          '<td class="num" style="background:'+bgA+';color:'+(isT?'#d0ecc8':'#8c6b2d')+'">'+fmt(a.v25)+'</td>'+
+          // ── VS AÑO ANT: Δ KG, Δ Ventas ──
+          '<td class="num" style="background:'+bgD+';color:'+(isT?'#d0ecc8':cdK)+';font-weight:600;'+S+'">'+
             (a.k25>0?arK+Math.abs(dK).toFixed(1)+'%':'—')+'</td>'+
-          '<td class="num" style="background:'+(isT?'':'#f0f4ff')+';color:'+(isT?'#d0ecc8':cdV)+';font-weight:700">'+
+          '<td class="num" style="background:'+bgD+';color:'+(isT?'#d0ecc8':cdV)+';font-weight:600">'+
             (a.v25>0?arV+Math.abs(dV).toFixed(1)+'%':'—')+'</td>'+
-          '<td class="num" style="color:'+mc+'">'+fmt(a.uai)+'</td>'+
+          // ── UAI ──
+          '<td class="num" style="color:'+mc+';'+S+'">'+fmt(a.uai)+'</td>'+
         '</tr>';
       });
       return rows;
