@@ -1003,7 +1003,7 @@ function combinarMeses(bucket, meses){
     meses.forEach(function(mk){
       var arr = (bucket[mk] && bucket[mk][campo]) || [];
       arr.forEach(function(item){
-        var k = item[keyName];
+        var k = item[keyName] != null ? item[keyName] : item.cli || item.prod;
         if(!acc[k]) acc[k] = Object.assign({}, item);
         else acc[k].netwr = (acc[k].netwr||0) + (item.netwr||0);
       });
@@ -1043,7 +1043,7 @@ function combinarMeses(bucket, meses){
     .sort(function(a,b){return (b.netwr||0)-(a.netwr||0);});
   orgArr.forEach(function(e){ e.pct = totOrg?(e.netwr/totOrg*100):0; });
   return {
-    topClientes:  sumaTop('topClientes','cli').slice(0,15),
+    topClientes:  sumaTop('topClientes','cliNum').slice(0,15),
     topProductos: sumaTop('topProductos','prod').slice(0,15),
     porOficina:   ofArr,
     org:          orgArr
