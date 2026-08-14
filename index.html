@@ -224,9 +224,9 @@ tfoot tr:last-child:hover td{background:#e8f5e0!important}
   /* Divider */
   .sec-divider::after{font-size:8px;letter-spacing:1px}
 
-  /* Top clientes tabla móvil */
-  #tbl-cli td:nth-child(3){display:none}
-  #tbl-cli th:nth-child(3){display:none}
+  /* Top clientes tabla móvil: ocultar Canal (4ª col) para ahorrar espacio */
+  #tbl-cli td:nth-child(4){display:none}
+  #tbl-cli th:nth-child(4){display:none}
 }
 </style>
 </head>
@@ -354,11 +354,11 @@ tfoot tr:last-child:hover td{background:#e8f5e0!important}
       <div class="g2" style="margin-top:14px">
         <div class="card">
           <div class="card-title">Top 15 Clientes <span class="ct-green" id="period-cli-lbl"></span></div>
-          <div class="tw h300"><table><thead><tr><th>#</th><th>Cliente</th><th>Canal</th><th style="text-align:right">Ventas MXN</th></tr></thead><tbody id="tbl-cli"></tbody></table></div>
+          <div class="tw h300"><table><thead><tr><th>#</th><th>Cliente</th><th>N° Cliente</th><th>Canal</th><th style="text-align:right">Ventas MXN</th></tr></thead><tbody id="tbl-cli"></tbody></table></div>
         </div>
         <div class="card">
           <div class="card-title">Top 15 Productos <span class="ct-green" id="period-prod-lbl"></span></div>
-          <div class="tw h300"><table><thead><tr><th>#</th><th>Producto</th><th style="text-align:right">Ventas MXN</th></tr></thead><tbody id="tbl-prod"></tbody></table></div>
+          <div class="tw h300"><table><thead><tr><th>#</th><th>Producto</th><th>N° Material</th><th style="text-align:right">Ventas MXN</th></tr></thead><tbody id="tbl-prod"></tbody></table></div>
         </div>
       </div>
 
@@ -1044,7 +1044,7 @@ function combinarMeses(bucket, meses){
   orgArr.forEach(function(e){ e.pct = totOrg?(e.netwr/totOrg*100):0; });
   return {
     topClientes:  sumaTop('topClientes','cliNum').slice(0,15),
-    topProductos: sumaTop('topProductos','prod').slice(0,15),
+    topProductos: sumaTop('topProductos','matnr').slice(0,15),
     porOficina:   ofArr,
     org:          orgArr
   };
@@ -1140,6 +1140,7 @@ function renderPeriod(ch, mon){
   $('tbl-cli').innerHTML = topCli.map(function(e,i){
     var color=ORG_COLORS[e.ch]||'#8c6b2d';
     return '<tr><td class="rk">'+(i+1)+'</td><td class="trunc">'+e.cli+'</td>'+
+      '<td class="num" style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--muted)">'+(e.cliNum||'—')+'</td>'+
       '<td><span class="tag-canal" style="background:'+color+'22;color:'+color+';border-color:'+color+'55">'+e.ch+'</span></td>'+
       '<td class="num"><div class="bi"><div class="bb"><div class="bf" style="width:'+(e.netwr/maxCli*100).toFixed(0)+'%;background:var(--green)"></div></div>'+fmt(e.netwr)+'</div></td></tr>';
   }).join('');
@@ -1149,6 +1150,7 @@ function renderPeriod(ch, mon){
   var maxProd = topProd.length?topProd[0].netwr:1;
   $('tbl-prod').innerHTML = topProd.map(function(e,i){
     return '<tr><td class="rk">'+(i+1)+'</td><td class="trunc" title="'+e.prod+'">'+e.prod+'</td>'+
+      '<td class="num" style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--muted)">'+(e.matnr||'—')+'</td>'+
       '<td class="num"><div class="bi"><div class="bb"><div class="bf" style="width:'+(e.netwr/maxProd*100).toFixed(0)+'%;background:#8c6b2d"></div></div>'+fmt(e.netwr)+'</div></td></tr>';
   }).join('');
 
