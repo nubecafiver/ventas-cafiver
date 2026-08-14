@@ -672,24 +672,40 @@ function populateFilters(){
     var o=document.createElement('option');o.value=ym;o.textContent=MONTHS[+p[1]-1]+' '+p[0];selM.appendChild(o);
   });
 
-  // ── Botones de mes ACUMULADO para la sección Período ──
-  // "Al día" = todo el año (ALL). Cada mes = acumulado enero→ese mes.
+  // ── Botones de mes (selección múltiple) para la sección Período ──
+  // "Al día" = todo el año. O marca varios meses y se suman (acumulado).
   var mesesArr = Object.keys(meses).sort();
+  window.__periodMeses = [];   // meses seleccionados (vacío = Al día / ALL)
   var cont = $('period-mes-btns');
   if(cont){
     var html = '<button data-key="ALL" class="pmb pmb-on">Al día</button>';
     mesesArr.forEach(function(ym){
       var p=ym.split('-');
-      html += '<button data-key="ACUM-'+ym+'" class="pmb">'+MONTHS[+p[1]-1]+'</button>';
+      html += '<button data-key="'+ym+'" class="pmb">'+MONTHS[+p[1]-1]+'</button>';
     });
     cont.innerHTML = html;
     cont.querySelectorAll('.pmb').forEach(function(b){
       b.addEventListener('click', function(){
-        cont.querySelectorAll('.pmb').forEach(function(x){ x.classList.remove('pmb-on'); });
-        b.classList.add('pmb-on');
-        window.__periodMesKey = b.dataset.key;   // 'ALL' o 'ACUM-2026-07'
+        var key = b.dataset.key;
+        if(key === 'ALL'){
+          window.__periodMeses = [];
+          cont.querySelectorAll('.pmb').forEach(function(x){ x.classList.remove('pmb-on'); });
+          b.classList.add('pmb-on');
+        } else {
+          var i = window.__periodMeses.indexOf(key);
+          if(i>=0) window.__periodMeses.splice(i,1);
+          else { window.__periodMeses.push(key); window.__periodMeses.sort(); }
+          // "Al día" se apaga si hay meses marcados
+          var alDia = cont.querySelector('.pmb[data-key="ALL"]');
+          if(window.__periodMeses.length===0){
+            if(alDia) alDia.classList.add('pmb-on');
+          } else {
+            if(alDia) alDia.classList.remove('pmb-on');
+          }
+          b.classList.toggle('pmb-on', window.__periodMeses.indexOf(key)>=0);
+        }
         var ch = $('sel-channel').value;
-        renderPeriod(ch, null);   // mon=null; el acumulado se resuelve por __periodMesKey
+        renderPeriod(ch, null);
       });
     });
   }
@@ -699,10 +715,9 @@ function populateFilters(){
   });
   $('btn-reset').addEventListener('click',function(){
     ['sel-channel','sel-month'].forEach(function(id){$(id).value='';});
-    // Volver los botones de período a "Al día"
-    window.__periodMesKey = 'ALL';
+    window.__periodMeses = [];
     var cont=$('period-mes-btns');
-    if(cont){ cont.querySelectorAll('.pmb').forEach(function(x){x.classList.remove('pmb-on');}); var first=cont.querySelector('.pmb'); if(first) first.classList.add('pmb-on'); }
+    if(cont){ cont.querySelectorAll('.pmb').forEach(function(x){x.classList.remove('pmb-on');}); var first=cont.querySelector('.pmb[data-key="ALL"]'); if(first) first.classList.add('pmb-on'); }
     applyFilters();
   });
   $('btn-prev').addEventListener('click',function(){if(activeDayIdx>0){activeDayIdx--;renderDay();}});
@@ -981,6 +996,60 @@ function renderLineas(fecha, ch){
 }
 
 // ── PERÍODO ──
+// Combina (suma) los paneles de varios meses para Top clientes/productos/oficinas/org
+function combinarMeses(bucket, meses){
+  function sumaTop(campo, keyName){
+    var acc = {};
+    meses.forEach(function(mk){
+      var arr = (bucket[mk] && bucket[mk][campo]) || [];
+      arr.forEach(function(item){
+        var k = item[keyName];
+        if(!acc[k]) acc[k] = Object.assign({}, item);
+        else acc[k].netwr = (acc[k].netwr||0) + (item.netwr||0);
+      });
+    });
+    return Object.keys(acc).map(function(k){return acc[k];})
+      .sort(function(a,b){return (b.netwr||0)-(a.netwr||0);});
+  }
+  // Oficinas: sumar netwr y recomputar %
+  var ofAcc = {};
+  meses.forEach(function(mk){
+    var arr = (bucket[mk] && bucket[mk].porOficina) || [];
+    arr.forEach(function(o){
+      var k=o.ofic;
+      if(!ofAcc[k]) ofAcc[k]={ofic:o.ofic,netwr:0};
+      ofAcc[k].netwr += (o.netwr||0);
+    });
+  });
+  var ofArr = Object.keys(ofAcc).map(function(k){return ofAcc[k];})
+    .sort(function(a,b){return (b.netwr||0)-(a.netwr||0);});
+  var totOf = ofArr.reduce(function(s,o){return s+(o.netwr||0);},0)||1;
+  ofArr.forEach(function(o){ o.pct = o.netwr/totOf*100; });
+  // Org (participación por canal): sumar netwr y kilos por canal
+  var orgAcc = {};
+  meses.forEach(function(mk){
+    var arr = (bucket[mk] && bucket[mk].org && bucket[mk].org.rows) || [];
+    arr.forEach(function(r){
+      var k=r.org;
+      if(!orgAcc[k]) orgAcc[k]={org:k,netwr:0,kilos:0,facts:0};
+      orgAcc[k].netwr += (r.netwr||0);
+      orgAcc[k].kilos += (r.kilos||0);
+      orgAcc[k].facts += (r.facts||0);
+    });
+  });
+  var totOrg = 0;
+  Object.keys(orgAcc).forEach(function(k){ totOrg += orgAcc[k].netwr; });
+  var orgArr = Object.keys(orgAcc).map(function(k){return orgAcc[k];})
+    .sort(function(a,b){return (b.netwr||0)-(a.netwr||0);});
+  orgArr.forEach(function(e){ e.pct = totOrg?(e.netwr/totOrg*100):0; });
+  return {
+    topClientes:  sumaTop('topClientes','cli').slice(0,15),
+    topProductos: sumaTop('topProductos','prod').slice(0,15),
+    porOficina:   ofArr,
+    org:          orgArr
+  };
+}
+
 function renderPeriod(ch, mon){
   // Filtrar porDia y calcular KPIs del período
   var porDia = D.porDia || {};
@@ -993,16 +1062,31 @@ function renderPeriod(ch, mon){
   // Usa "paneles" (por mes y por canal+mes) cuando el JSON ya lo trae;
   // si no, cae al comportamiento anterior (período completo).
   var topCli, topProd, porOfic, orgAll;
-  // Clave de panel: usa el botón de acumulado si existe, si no el mes suelto o ALL
-  var mesKey = window.__periodMesKey || mon || 'ALL';
+  var selMeses = window.__periodMeses || [];
+
   if(D.paneles && D.paneles.mes){
     var bucket = (ch && D.paneles.canalMes && D.paneles.canalMes[ch])
                  ? D.paneles.canalMes[ch] : D.paneles.mes;
-    var pdata  = bucket[mesKey] || bucket['ALL'] || {};
-    topCli  = pdata.topClientes  || [];
-    topProd = pdata.topProductos || [];
-    porOfic = pdata.porOficina   || [];
-    orgAll  = (pdata.org && pdata.org.rows) || [];
+
+    if(selMeses.length === 0){
+      var pdata = bucket['ALL'] || {};
+      topCli  = pdata.topClientes  || [];
+      topProd = pdata.topProductos || [];
+      porOfic = pdata.porOficina   || [];
+      orgAll  = (pdata.org && pdata.org.rows) || [];
+    } else if(selMeses.length === 1){
+      var pdata1 = bucket[selMeses[0]] || {};
+      topCli  = pdata1.topClientes  || [];
+      topProd = pdata1.topProductos || [];
+      porOfic = pdata1.porOficina   || [];
+      orgAll  = (pdata1.org && pdata1.org.rows) || [];
+    } else {
+      var comb = combinarMeses(bucket, selMeses);
+      topCli  = comb.topClientes;
+      topProd = comb.topProductos;
+      porOfic = comb.porOficina;
+      orgAll  = comb.org;
+    }
   } else if(ch && D.topPorCanal && D.topPorCanal[ch]){
     var datos = D.topPorCanal[ch];
     topCli  = datos.topClientes  || [];
@@ -1016,15 +1100,16 @@ function renderPeriod(ch, mon){
     orgAll  = (D.orgMXN&&D.orgMXN.rows)||[];
   }
 
-  // Etiqueta del período según el botón de acumulado
+  // Etiqueta del período según meses seleccionados
   var etiqPeriodo;
-  if(mesKey === 'ALL'){
+  if(selMeses.length === 0){
     etiqPeriodo = 'Acumulado al día (todo el año)';
-  } else if(mesKey.indexOf('ACUM-')===0){
-    var ymA = mesKey.replace('ACUM-','').split('-');
-    etiqPeriodo = 'Acumulado Enero → '+MONTHS[+ymA[1]-1]+' '+ymA[0];
+  } else if(selMeses.length === 1){
+    var y1 = selMeses[0].split('-');
+    etiqPeriodo = MONTHS[+y1[1]-1]+' '+y1[0];
   } else {
-    etiqPeriodo = MONTHS[+mesKey.split('-')[1]-1]+' '+mesKey.split('-')[0];
+    var nombres = selMeses.map(function(mk){ var p=mk.split('-'); return MONTHS[+p[1]-1]; });
+    etiqPeriodo = nombres.join(' + ')+' (acumulado)';
   }
   $('period-sub').textContent = ch ? (ch+' · '+etiqPeriodo) : etiqPeriodo;
 
