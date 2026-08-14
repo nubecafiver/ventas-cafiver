@@ -35,6 +35,9 @@ header{display:flex;align-items:center;justify-content:space-between;flex-wrap:w
 select,.btn{background:var(--surf2);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:6px 11px;font-family:'DM Sans',sans-serif;font-size:12px;outline:none;transition:border-color .2s;cursor:pointer}
 select:hover,select:focus{border-color:var(--green);background:#f0f8ec}
 .btn{color:var(--muted)}.btn:hover{color:var(--green);border-color:var(--green)}
+.pmb{background:var(--surf2);border:1px solid var(--border);color:var(--text2);border-radius:20px;padding:5px 14px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;user-select:none}
+.pmb:hover{border-color:var(--green)}
+.pmb-on{background:var(--green);color:#fff;border-color:var(--green);font-weight:700}
 .filter-active{border-color:var(--green)!important;background:#f0f8ec!important;color:var(--green)!important}
 .h-update{font-size:10px;color:var(--muted);white-space:nowrap}
 
@@ -330,11 +333,17 @@ tfoot tr:last-child:hover td{background:#e8f5e0!important}
       </div>
 
       <!-- Filtros de la sección mensual -->
-      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px;padding:10px 12px;background:#f0f8ec;border:1px solid #c8e0bc;border-radius:10px">
-        <span style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.3px">FILTRAR:</span>
-        <select id="sel-channel"><option value="">Todos los canales</option></select>
-        <select id="sel-month"><option value="">Todos los meses</option></select>
-        <button class="btn" id="btn-reset">↺ Reset</button>
+      <div style="margin-top:12px;padding:10px 12px;background:#f0f8ec;border:1px solid #c8e0bc;border-radius:10px">
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px">
+          <span style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.3px">CANAL:</span>
+          <select id="sel-channel"><option value="">Todos los canales</option></select>
+          <button class="btn" id="btn-reset">↺ Reset</button>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+          <span style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.3px">MES:</span>
+          <div style="display:flex;flex-wrap:wrap;gap:6px" id="period-mes-btns"></div>
+        </div>
+        <select id="sel-month" style="display:none"><option value="">Todos los meses</option></select>
       </div>
 
       <div class="card" style="margin-top:14px">
@@ -663,11 +672,37 @@ function populateFilters(){
     var o=document.createElement('option');o.value=ym;o.textContent=MONTHS[+p[1]-1]+' '+p[0];selM.appendChild(o);
   });
 
+  // ── Botones de mes ACUMULADO para la sección Período ──
+  // "Al día" = todo el año (ALL). Cada mes = acumulado enero→ese mes.
+  var mesesArr = Object.keys(meses).sort();
+  var cont = $('period-mes-btns');
+  if(cont){
+    var html = '<button data-key="ALL" class="pmb pmb-on">Al día</button>';
+    mesesArr.forEach(function(ym){
+      var p=ym.split('-');
+      html += '<button data-key="ACUM-'+ym+'" class="pmb">'+MONTHS[+p[1]-1]+'</button>';
+    });
+    cont.innerHTML = html;
+    cont.querySelectorAll('.pmb').forEach(function(b){
+      b.addEventListener('click', function(){
+        cont.querySelectorAll('.pmb').forEach(function(x){ x.classList.remove('pmb-on'); });
+        b.classList.add('pmb-on');
+        window.__periodMesKey = b.dataset.key;   // 'ALL' o 'ACUM-2026-07'
+        var ch = $('sel-channel').value;
+        renderPeriod(ch, null);   // mon=null; el acumulado se resuelve por __periodMesKey
+      });
+    });
+  }
+
   ['sel-channel','sel-month'].forEach(function(id){
     $(id).addEventListener('change', applyFilters);
   });
   $('btn-reset').addEventListener('click',function(){
     ['sel-channel','sel-month'].forEach(function(id){$(id).value='';});
+    // Volver los botones de período a "Al día"
+    window.__periodMesKey = 'ALL';
+    var cont=$('period-mes-btns');
+    if(cont){ cont.querySelectorAll('.pmb').forEach(function(x){x.classList.remove('pmb-on');}); var first=cont.querySelector('.pmb'); if(first) first.classList.add('pmb-on'); }
     applyFilters();
   });
   $('btn-prev').addEventListener('click',function(){if(activeDayIdx>0){activeDayIdx--;renderDay();}});
@@ -958,7 +993,8 @@ function renderPeriod(ch, mon){
   // Usa "paneles" (por mes y por canal+mes) cuando el JSON ya lo trae;
   // si no, cae al comportamiento anterior (período completo).
   var topCli, topProd, porOfic, orgAll;
-  var mesKey = mon || 'ALL';
+  // Clave de panel: usa el botón de acumulado si existe, si no el mes suelto o ALL
+  var mesKey = window.__periodMesKey || mon || 'ALL';
   if(D.paneles && D.paneles.mes){
     var bucket = (ch && D.paneles.canalMes && D.paneles.canalMes[ch])
                  ? D.paneles.canalMes[ch] : D.paneles.mes;
@@ -980,11 +1016,17 @@ function renderPeriod(ch, mon){
     orgAll  = (D.orgMXN&&D.orgMXN.rows)||[];
   }
 
-  if(ch){
-    $('period-sub').textContent = ch + (mon?' · '+MONTHS[+mon.split('-')[1]-1]+' '+mon.split('-')[0]:'');
+  // Etiqueta del período según el botón de acumulado
+  var etiqPeriodo;
+  if(mesKey === 'ALL'){
+    etiqPeriodo = 'Acumulado al día (todo el año)';
+  } else if(mesKey.indexOf('ACUM-')===0){
+    var ymA = mesKey.replace('ACUM-','').split('-');
+    etiqPeriodo = 'Acumulado Enero → '+MONTHS[+ymA[1]-1]+' '+ymA[0];
   } else {
-    $('period-sub').textContent = mon ? MONTHS[+mon.split('-')[1]-1]+' '+mon.split('-')[0] : 'Período completo';
+    etiqPeriodo = MONTHS[+mesKey.split('-')[1]-1]+' '+mesKey.split('-')[0];
   }
+  $('period-sub').textContent = ch ? (ch+' · '+etiqPeriodo) : etiqPeriodo;
 
   // KPIs período (las tarjetas se quitaron; se protege por si el elemento no existe)
   var _sk=function(id,val){ var e=$(id); if(e) e.textContent=val; };
