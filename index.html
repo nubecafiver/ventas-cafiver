@@ -354,23 +354,17 @@ tfoot tr:last-child:hover td{background:#e8f5e0!important}
       <div class="g2" style="margin-top:14px">
         <div class="card">
           <div class="card-title">Top 15 Clientes <span class="ct-green" id="period-cli-lbl"></span></div>
-          <div class="tw h300"><table><thead><tr><th>#</th><th>Cliente</th><th>N° Cliente</th><th>Canal</th><th style="text-align:right">Ventas MXN</th></tr></thead><tbody id="tbl-cli"></tbody></table></div>
+          <div class="tw h300"><table><thead><tr><th>#</th><th>Cliente</th><th>N° Cliente</th><th>Canal</th><th style="text-align:right">Kg Café</th><th style="text-align:right">Ventas MXN</th></tr></thead><tbody id="tbl-cli"></tbody></table></div>
         </div>
         <div class="card">
           <div class="card-title">Top 15 Productos <span class="ct-green" id="period-prod-lbl"></span></div>
-          <div class="tw h300"><table><thead><tr><th>#</th><th>Producto</th><th>N° Material</th><th style="text-align:right">Ventas MXN</th></tr></thead><tbody id="tbl-prod"></tbody></table></div>
+          <div class="tw h300"><table><thead><tr><th>#</th><th>Producto</th><th>N° Material</th><th style="text-align:right">Kg Café</th><th style="text-align:right">Ventas MXN</th></tr></thead><tbody id="tbl-prod"></tbody></table></div>
         </div>
       </div>
 
-      <div class="g2" style="margin-top:14px">
-        <div class="card">
-          <div class="card-title">Participación por Canal</div>
-          <div class="cbox"><canvas id="chart-canal"></canvas></div>
-        </div>
-        <div class="card">
-          <div class="card-title">Ventas por Oficina</div>
-          <div class="tw h300"><table><thead><tr><th>#</th><th>Oficina</th><th style="text-align:right">MXN</th><th style="text-align:right">%</th></tr></thead><tbody id="tbl-ofic"></tbody></table></div>
-        </div>
+      <div class="card" style="margin-top:14px">
+        <div class="card-title">Ventas por Oficina</div>
+        <div class="tw h300"><table><thead><tr><th>#</th><th>Oficina</th><th style="text-align:right">MXN</th><th style="text-align:right">%</th></tr></thead><tbody id="tbl-ofic"></tbody></table></div>
       </div>
     </div>
 
@@ -1005,7 +999,7 @@ function combinarMeses(bucket, meses){
       arr.forEach(function(item){
         var k = item[keyName] != null ? item[keyName] : item.cli || item.prod;
         if(!acc[k]) acc[k] = Object.assign({}, item);
-        else acc[k].netwr = (acc[k].netwr||0) + (item.netwr||0);
+        else { acc[k].netwr = (acc[k].netwr||0) + (item.netwr||0); acc[k].kilos = (acc[k].kilos||0) + (item.kilos||0); }
       });
     });
     return Object.keys(acc).map(function(k){return acc[k];})
@@ -1142,6 +1136,7 @@ function renderPeriod(ch, mon){
     return '<tr><td class="rk">'+(i+1)+'</td><td class="trunc">'+e.cli+'</td>'+
       '<td class="num" style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--muted)">'+(e.cliNum||'—')+'</td>'+
       '<td><span class="tag-canal" style="background:'+color+'22;color:'+color+';border-color:'+color+'55">'+e.ch+'</span></td>'+
+      '<td class="num" style="color:var(--text2)">'+fmtN(e.kilos||0)+'</td>'+
       '<td class="num"><div class="bi"><div class="bb"><div class="bf" style="width:'+(e.netwr/maxCli*100).toFixed(0)+'%;background:var(--green)"></div></div>'+fmt(e.netwr)+'</div></td></tr>';
   }).join('');
 
@@ -1151,14 +1146,17 @@ function renderPeriod(ch, mon){
   $('tbl-prod').innerHTML = topProd.map(function(e,i){
     return '<tr><td class="rk">'+(i+1)+'</td><td class="trunc" title="'+e.prod+'">'+e.prod+'</td>'+
       '<td class="num" style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:var(--muted)">'+(e.matnr||'—')+'</td>'+
+      '<td class="num" style="color:var(--text2)">'+fmtN(e.kilos||0)+'</td>'+
       '<td class="num"><div class="bi"><div class="bb"><div class="bf" style="width:'+(e.netwr/maxProd*100).toFixed(0)+'%;background:#8c6b2d"></div></div>'+fmt(e.netwr)+'</div></td></tr>';
   }).join('');
 
-  // Dona canal (ya calculado arriba)
-  mkChart('chart-canal',{type:'doughnut',data:{
-    labels:orgAll.map(function(e){return e.org;}),
-    datasets:[{data:orgAll.map(function(e){return e.netwr;}),backgroundColor:PALETTE,borderWidth:2,borderColor:'#fff',hoverOffset:10}]
-  },options:{plugins:{legend:{position:'right',labels:{color:'#5a4a30',font:{size:11},boxWidth:12,padding:12}}},cutout:'60%'}});
+  // Dona canal — se quitó del layout; se protege por si el canvas no existe
+  if(document.getElementById('chart-canal')){
+    mkChart('chart-canal',{type:'doughnut',data:{
+      labels:orgAll.map(function(e){return e.org;}),
+      datasets:[{data:orgAll.map(function(e){return e.netwr;}),backgroundColor:PALETTE,borderWidth:2,borderColor:'#fff',hoverOffset:10}]
+    },options:{plugins:{legend:{position:'right',labels:{color:'#5a4a30',font:{size:11},boxWidth:12,padding:12}}},cutout:'60%'}});
+  }
 
   // Oficinas
   var totOfic = porOfic.reduce(function(s,e){return s+e.netwr;},0)||1;
