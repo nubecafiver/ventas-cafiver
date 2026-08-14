@@ -248,15 +248,8 @@ tfoot tr:last-child:hover td{background:#e8f5e0!important}
         <span class="h-badge" id="h-rows">—</span>
       </div>
     </div>
-    <button class="h-filter-toggle" id="btn-filter-toggle">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
-      Filtros
-    </button>
     <div class="h-right" id="h-right-panel">
-      <select id="sel-channel"><option value="">Todos los canales</option></select>
-      <select id="sel-month"><option value="">Todos los meses</option></select>
       <span class="h-update" id="h-update"></span>
-      <button class="btn" id="btn-reset">↺ Reset</button>
     </div>
   </header>
 
@@ -336,12 +329,12 @@ tfoot tr:last-child:hover td{background:#e8f5e0!important}
         <span class="sec-sub" id="period-sub">—</span>
       </div>
 
-      <div class="kpi-grid" style="margin-top:14px">
-        <div class="kpi" style="--kc:#2d5a1b"><div class="kpi-label">Ventas Totales</div><div class="kpi-value" id="pk-total">—</div><div class="kpi-sub" id="pk-total-s"></div></div>
-        <div class="kpi" style="--kc:#5a8c2d"><div class="kpi-label">Facturas</div><div class="kpi-value" id="pk-fact">—</div><div class="kpi-sub" id="pk-fact-s"></div></div>
-        <div class="kpi" style="--kc:#8c6b2d"><div class="kpi-label">Clientes</div><div class="kpi-value" id="pk-cli">—</div><div class="kpi-sub" id="pk-cli-s"></div></div>
-        <div class="kpi" style="--kc:#c4714a"><div class="kpi-label">Ticket Promedio</div><div class="kpi-value" id="pk-ticket">—</div><div class="kpi-sub">por factura</div></div>
-        <div class="kpi" style="--kc:#4a7c8c"><div class="kpi-label">Total Kilos</div><div class="kpi-value" id="pk-kilos">—</div><div class="kpi-sub"></div></div>
+      <!-- Filtros de la sección mensual -->
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px;padding:10px 12px;background:#f0f8ec;border:1px solid #c8e0bc;border-radius:10px">
+        <span style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.3px">FILTRAR:</span>
+        <select id="sel-channel"><option value="">Todos los canales</option></select>
+        <select id="sel-month"><option value="">Todos los meses</option></select>
+        <button class="btn" id="btn-reset">↺ Reset</button>
       </div>
 
       <div class="card" style="margin-top:14px">
@@ -993,15 +986,16 @@ function renderPeriod(ch, mon){
     $('period-sub').textContent = mon ? MONTHS[+mon.split('-')[1]-1]+' '+mon.split('-')[0] : 'Período completo';
   }
 
-  // KPIs período
-  $('pk-total').textContent   = fmt(kpisP.total);
-  $('pk-total-s').textContent = fmtK(kpisP.total)+' MXN';
-  $('pk-fact').textContent    = kpisP.facturas.toLocaleString('es-MX');
-  $('pk-fact-s').textContent  = kpisP.lineas.toLocaleString('es-MX')+' líneas';
-  $('pk-cli').textContent     = kpisP.clientes.toLocaleString('es-MX');
-  $('pk-cli-s').textContent   = kpisP.dias+' días con ventas';
-  $('pk-ticket').textContent  = kpisP.facturas?fmt(kpisP.total/kpisP.facturas):'—';
-  $('pk-kilos').textContent   = fmtN(kpisP.kilos)+' kg';
+  // KPIs período (las tarjetas se quitaron; se protege por si el elemento no existe)
+  var _sk=function(id,val){ var e=$(id); if(e) e.textContent=val; };
+  _sk('pk-total',   fmt(kpisP.total));
+  _sk('pk-total-s', fmtK(kpisP.total)+' MXN');
+  _sk('pk-fact',    kpisP.facturas.toLocaleString('es-MX'));
+  _sk('pk-fact-s',  kpisP.lineas.toLocaleString('es-MX')+' líneas');
+  _sk('pk-cli',     kpisP.clientes.toLocaleString('es-MX'));
+  _sk('pk-cli-s',   kpisP.dias+' días con ventas');
+  _sk('pk-ticket',  kpisP.facturas?fmt(kpisP.total/kpisP.facturas):'—');
+  _sk('pk-kilos',   fmtN(kpisP.kilos)+' kg');
 
   // Tendencia diaria — usar porDia filtrado por mes
   var daysF = Object.keys(porDia).filter(function(d){
