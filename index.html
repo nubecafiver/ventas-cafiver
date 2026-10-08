@@ -552,7 +552,7 @@ function cargarPorJSONP(){
     setTimeout(initDashboard, 80);
   };
 
-  script.src = APPS_SCRIPT_URL + '?callback=' + callbackName;
+  script.src = APPS_SCRIPT_URL + '?callback=' + callbackName + '&t=' + Date.now();
   script.onerror = function(){
     if(done) return; done=true;
     clearTimeout(timeout);
@@ -592,7 +592,7 @@ function cargarConIframe() {
   });
 
   document.body.appendChild(iframe);
-  iframe.src = APPS_SCRIPT_URL;
+  iframe.src = APPS_SCRIPT_URL + '?t=' + Date.now();
 }
 
 cargarDatos();
