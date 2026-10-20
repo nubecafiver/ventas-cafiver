@@ -1421,7 +1421,7 @@ function calcKPIsPeriodo(ch, mon){
               '<td class="num" style="padding:7px 12px;color:var(--text2)">'+fmtN(f.presKg)+'</td>'+
               '<td class="num" style="padding:7px 12px;color:var(--muted)">'+fmt(f.presV)+'</td>'+
               '<td class="num" style="padding:7px 12px;background:#fffdf3;color:#8c6b2d">'+fmt(f.presVProy)+'</td>'+
-              '<td class="num" style="padding:7px 12px;background:#f6faff;text-align:right">'+pcCell(f.realV,f.presVProy)+'</td>'+
+              '<td class="num" style="padding:7px 12px;background:#f6faff;text-align:right">'+pcCell(f.realV,f.presV)+'</td>'+
             '</tr>';
           }).join('')+
           '</tbody><tfoot><tr style="background:var(--green);color:#fff;font-weight:700">'+
@@ -1431,7 +1431,7 @@ function calcKPIsPeriodo(ch, mon){
             '<td class="num" style="padding:8px 12px">'+fmtN(totPK)+'</td>'+
             '<td class="num" style="padding:8px 12px">'+fmt(totPV)+'</td>'+
             '<td class="num" style="padding:8px 12px">'+fmt(totPVProy)+'</td>'+
-            '<td class="num" style="padding:8px 12px">'+(totPVProy>0?(totRV/totPVProy*100).toFixed(1)+'%':'—')+'</td>'+
+            '<td class="num" style="padding:8px 12px">'+(totPV>0?(totRV/totPV*100).toFixed(1)+'%':'—')+'</td>'+
           '</tr></tfoot></table></div></div>';
       cont.innerHTML = html;
       cont.style.display = 'block';
